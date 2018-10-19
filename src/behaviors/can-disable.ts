@@ -1,25 +1,20 @@
-import {Constructor, WrappedElement} from './mixin';
+import {BaseBehavior, Constructor} from './behavior';
 
-export interface CanDisable {
+export interface CanDisableAdapter {
   disabled: boolean;
 }
-// Allows the interface to be passed to `hasBehavior`.
-export namespace CanDisable {
-  export let behaviorType: CanDisable;
+
+export interface CanDisable extends BaseBehavior<CanDisableAdapter> {
+  disabled: boolean;
 }
 
-export function withDisable<T extends Constructor<WrappedElement<Element & {disabled: boolean}>>>(Base: T): T & Constructor<CanDisable> {
+export function withDisable<T extends Constructor<BaseBehavior<CanDisableAdapter>>>(Base: T): T & Constructor<CanDisable> {
   return class extends Base implements CanDisable {
-    constructor(...args: any[]) {
-      super(...args);
-      this.addBehavior(CanDisable);
-    }
-
-    get disabled() {
-      return this.element.disabled;
+    get disabled()  {
+      return this.adapter.disabled;
     }
     set disabled(value: boolean) {
-      this.element.disabled = value;
+      this.adapter.disabled = value;
     }
   };
 }

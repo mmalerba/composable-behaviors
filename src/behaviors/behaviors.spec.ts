@@ -1,33 +1,53 @@
-import {Control} from './control';
-import {HasValue, withValue} from './has-value';
-import {hasBehavior, WrappedElement} from './mixin';
-import {CanDisable, withDisable} from './can-disable';
+import {baseBehavior} from './behavior';
+import {CanDisableAdapter, withDisable} from './can-disable';
+import {HasActiveDescendantAdapter, withActiveDescendant} from './has-active-descendant';
+import {HasId, HasIdAdapter, withUniqueId} from './has-id';
 
 describe('Behaviors', () => {
-  it('should work', () => {
-    const el = document.createElement('input');
-    const ctrl = new Control(el);
-    expect(ctrl.disabled).toBe(false);
-    expect(ctrl.value).toBe('');
-    ctrl.disabled = true;
-    ctrl.value = 'test';
+  it('withDisable should work', () => {
+    const Disableable = withDisable(baseBehavior<CanDisableAdapter>());
+    const el = document.createElement('button');
+    const disableable = new Disableable(el);
+    expect(disableable.disabled).toBe(false);
+    disableable.disabled = true;
     expect(el.disabled).toBe(true);
-    expect(el.value).toBe('test');
-    expect(ctrl.disabled).toBe(true);
-    expect(ctrl.value).toBe('test');
   });
 
-  it('should correctly identify behaviors', () => {
-    const WrappedElWithValue = withValue(WrappedElement<Element & {value: string}>());
-    const WrappedElWithDisabled = withDisable(WrappedElement<Element & {disabled: boolean}>());
-    const objWithValue: unknown = new WrappedElWithValue(document.createElement('input'));
-    const objWithDisabled: unknown = new WrappedElWithDisabled(document.createElement('input'));
-    const objWithBoth: unknown = new Control(document.createElement('input'));
-    expect(hasBehavior(objWithValue, HasValue)).toBe(true);
-    expect(hasBehavior(objWithDisabled, HasValue)).toBe(false);
-    expect(hasBehavior(objWithBoth, HasValue)).toBe(true);
-    expect(hasBehavior(objWithValue, CanDisable)).toBe(false);
-    expect(hasBehavior(objWithDisabled, CanDisable)).toBe(true);
-    expect(hasBehavior(objWithBoth, CanDisable)).toBe(true);
+  it('withUniqueId should work', () => {
+    const Identifiable = withUniqueId(baseBehavior<HasIdAdapter>());
+    const el = document.createElement('div');
+    const identifiable = new Identifiable(el);
+    identifiable.setup();
+    expect(identifiable.id).toBe('uuid-0');
+  });
+
+  it('withActiveDescendant should work', () => {
+    const AD = withActiveDescendant(baseBehavior<HasActiveDescendantAdapter<HasId>>());
+    const Item = withUniqueId(baseBehavior<HasIdAdapter>());
+    class Adapter {
+      children: HasId[] = [];
+
+      constructor(private el: Element) {
+        for (let i = 0; i < el.children.length; i++) {
+          this.children.push(new Item(el.children[i]));
+        }
+      }
+    }
+    const parent = document.createElement('div');
+    const child1 = document.createElement('div');
+    const child2 = document.createElement('div');
+    const child3 = document.createElement('div');
+    child1.id = 'child1';
+    child2.id = 'child2';
+    child3.id = 'child3';
+    parent.append(child1, child2, child3);
+    const ad = new AD(new Adapter(parent));
+
+    ad.adapter.children.forEach(c => c.setup());
+    ad.setup();
+
+    ad.activateNextItem();
+    ad.activateNextItem();
+    expect((ad.activeDescendant as any).adapter).toBe(child2);
   });
 });

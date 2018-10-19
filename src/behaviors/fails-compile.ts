@@ -1,23 +1,11 @@
-import {Control} from './control';
-import {CanDisable, withDisable} from './can-disable';
-import {hasBehavior, WrappedElement} from './mixin';
+import {baseBehavior} from './behavior';
+import {withDisable} from './can-disable';
 
-// fails: div doesn't have disable, value.
-let _: any = new Control(document.createElement('div'));
-// works: input has correct properties.
-_ = new Control(document.createElement('input'));
+// fails: passing the BaseBehavior class directly is not allowed
+let _ = withDisable(baseBehavior);
+// fails: calling the BaseBehavior function without correct type
+_ = withDisable(baseBehavior<HTMLDivElement>());
+// works: calling the BaseBehavior function with correct type
+_ = withDisable(baseBehavior<HTMLButtonElement>());
 
-// fails: passing the WrappedElement class directly is not allowed
-_ = withDisable(WrappedElement);
-// fails: calling the WrappedElement function without correct type
-_ = withDisable(WrappedElement());
-// works: calling the WrappedElement function with correct type
-_ = withDisable(WrappedElement<Element & {disabled: boolean}>());
 
-const test: unknown = new Control(document.createElement('input'));
-// fails: type is unknown
-_ = test.disabled;
-if (hasBehavior(test, CanDisable)) {
-  // works: type is known due to type guard
-  _ = test.disabled;
-}
